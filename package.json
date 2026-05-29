@@ -1,0 +1,22 @@
+{
+  "name": "opencode-workflow-plugin",
+  "version": "0.1.0",
+  "description": "OpenCode Workflow Plugin — Multi-step workflow orchestration with serial, parallel, and dynamic mapParallel support",
+  "main": "./src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'No build needed - OpenCode loads .ts directly'"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.15.12"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "workflow",
+    "orchestration",
+    "parallel",
+    "agent"
+  ],
+  "license": "MIT"
+}
