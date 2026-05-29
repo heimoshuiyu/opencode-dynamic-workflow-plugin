@@ -1,6 +1,6 @@
 # OpenCode Workflow Plugin
 
-An [OpenCode](https://opencode.ai) plugin that enables multi-step workflow orchestration with serial, parallel, and dynamic mapParallel execution. Define workflows as JavaScript DSL scripts, and the plugin dispatches sub-agents to complete complex tasks — with intermediate results isolated from your main conversation.
+An [OpenCode](https://opencode.ai) plugin that enables multi-step workflow orchestration with serial, parallel, dynamic mapParallel, conditional branching (`when`), and iterative loops (`loop`). Define workflows as JavaScript DSL scripts, and the plugin dispatches sub-agents to complete complex tasks — with intermediate results isolated from your main conversation.
 
 [中文文档](./README.zh.md)
 
@@ -9,6 +9,9 @@ An [OpenCode](https://opencode.ai) plugin that enables multi-step workflow orche
 - **Serial execution** — Steps run in order, with results chained between agents.
 - **Parallel execution** — Multiple agents launched concurrently in a single response, achieving real speedup (4.7x measured).
 - **Dynamic mapParallel** — `array.map(item => agent(...))` pattern expands at runtime based on previous results, then runs all agents in parallel.
+- **Conditional branching (`when`)** — `when(condition, then, else?)` evaluates natural language conditions at runtime to choose execution paths.
+- **Iterative loops (`loop`)** — `loop(condition, body, { maxIterations })` repeats steps until an exit condition is met (e.g., all tests pass).
+- **Recursive nesting** — `when` and `loop` can nest up to 3 levels deep, with full sub-step parsing inside each block.
 - **Result isolation** — Intermediate outputs stay in the workflow agent's context, keeping your main conversation clean.
 - **Correct session tree** — All sub-agents nest properly in the TUI session tree.
 
@@ -92,6 +95,27 @@ const items = ['project-a', 'project-b', 'project-c']
 const analyses = await parallel(
   items.map(item => () => agent(`Analyze ${item}...`, { label: `Analyze:${item}` }))
 )
+
+// Conditional branching (when)
+await when('the analysis found security vulnerabilities', async () => {
+  await agent(`Generate a security fix plan...`, { label: 'Security Fix' })
+})
+
+// if-else
+await when('quality score is above 80',
+  async () => {
+    await agent(`Proceed with deployment...`, { label: 'Deploy' })
+  },
+  async () => {
+    await agent(`Generate improvement suggestions...`, { label: 'Improve' })
+  }
+)
+
+// Iterative loop (loop until condition is met)
+await loop('all tests pass with 0 failures', async () => {
+  await agent(`Analyze failing tests, fix code, and re-run tests...`, 
+    { label: 'Fix & Test' })
+}, { maxIterations: 5, label: 'Test Fix Loop' })
 
 // Return final result
 return { result, analyses }

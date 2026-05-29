@@ -1,12 +1,15 @@
 # OpenCode Workflow 插件
 
-一个 [OpenCode](https://opencode.ai) 插件，提供多步骤工作流编排能力，支持串行、并行和动态 mapParallel 执行。将工作流定义为 JavaScript DSL 脚本，插件会调度子代理完成复杂任务——中间结果与主对话完全隔离。
+一个 [OpenCode](https://opencode.ai) 插件，提供多步骤工作流编排能力，支持串行、并行、动态 mapParallel、条件判断（`when`）和循环迭代（`loop`）。将工作流定义为 JavaScript DSL 脚本，插件会调度子代理完成复杂任务——中间结果与主对话完全隔离。
 
 ## 功能
 
 - **串行执行** — 步骤按顺序运行，结果在代理之间传递。
 - **并行执行** — 多个代理在单次响应中并发启动，实测 **4.7 倍加速**。
 - **动态 mapParallel** — `array.map(item => agent(...))` 模式根据前一步结果在运行时展开，然后并行执行所有代理。
+- **条件判断（`when`）** — `when(condition, then, else?)` 在运行时评估自然语言条件，选择执行路径。
+- **循环迭代（`loop`）** — `loop(condition, body, { maxIterations })` 重复执行步骤直到满足退出条件（如所有测试通过）。
+- **递归嵌套** — `when` 和 `loop` 最多嵌套 3 层，每层内完整解析子步骤。
 - **结果隔离** — 中间结果留在工作流代理的上下文中，不污染主对话。
 - **会话树正确** — 所有子代理在 TUI 会话树中正确嵌套。
 
@@ -17,7 +20,7 @@
 | 组件 | 钩子 | 说明 |
 |------|------|------|
 | `workflow` 代理 | `Hooks.config` | 子代理，读取工作流脚本、解析并逐步调度子代理执行。 |
-| `workflow-parse` 工具 | `Hooks.tool` | 解析工作流 JS 脚本为结构化执行计划（阶段、代理、并行组、mapParallel 展开）。 |
+| `workflow-parse` 工具 | `Hooks.tool` | 解析工作流 JS 脚本为结构化执行计划（阶段、代理、并行组、mapParallel 展开、when 条件、loop 循环）。 |
 
 ### 执行流程
 
@@ -91,6 +94,27 @@ const analyses = await parallel(
   items.map(item => () => agent(`分析 ${item}...`, { label: `分析:${item}` }))
 )
 
+// 条件判断（when）
+await when('分析结果中发现了安全漏洞', async () => {
+  await agent(`生成安全修复计划...`, { label: '安全修复' })
+})
+
+// if-else 条件
+await when('质量评分高于 80 分',
+  async () => {
+    await agent(`准备部署...`, { label: '部署' })
+  },
+  async () => {
+    await agent(`生成改进建议...`, { label: '改进建议' })
+  }
+)
+
+// 循环迭代（直到条件满足）
+await loop('所有测试通过，0 个失败', async () => {
+  await agent(`分析失败测试并修复代码，然后重新运行测试...`, 
+    { label: '修复并测试' })
+}, { maxIterations: 5, label: '测试修复循环' })
+
 // 返回最终结果
 return { result, analyses }
 ```
@@ -134,7 +158,7 @@ opencode-workflow-plugin/
 ├── src/
 │   ├── index.ts                  # 插件入口 — server() → Hooks
 │   ├── workflow-agent-prompt.ts  # 工作流代理系统提示词
-│   └── workflow-parse-tool.ts    # 脚本解析器（阶段、代理、并行、mapParallel）
+│   └── workflow-parse-tool.ts    # 脚本解析器（阶段、代理、并行、mapParallel、when、loop）
 ├── workflows/
 │   └── understand-project.js     # 示例工作流脚本
 └── skill/

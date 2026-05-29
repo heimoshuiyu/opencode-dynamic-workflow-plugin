@@ -48,6 +48,33 @@ This is a dynamic expansion step. Execute as follows:
 5. Save all results
 - Move to the next step
 
+**If the step is \`when(condition, thenSteps, elseSteps?)\`:**
+This is a conditional branching step. Execute as follows:
+1. **Review context**: Look at the results of all previous steps (and any variables in scope)
+2. **Evaluate the condition**: The condition is a natural language statement. Determine whether it is TRUE or FALSE based on the available results
+3. **If TRUE**: Execute all steps in \`thenSteps\` sequentially (following all the same rules for each sub-step type)
+4. **If FALSE**:
+   - If \`elseSteps\` exists, execute them sequentially
+   - If no \`elseSteps\`, skip this step entirely
+5. **Save result**: If the when step has an \`outputVar\`, save the result of the last executed sub-step (from whichever branch was taken)
+6. **Report**: Briefly log which branch was taken and why
+- Move to the next step
+
+**If the step is \`loop(condition, body, { maxIterations })\`:**
+This is an iterative loop step. Execute as follows:
+1. **Initialize**: Set \`iteration = 0\`
+2. **Execute body**: Execute all steps in \`body\` sequentially (following all the same rules for each sub-step type)
+3. **Evaluate exit condition**: After the body completes, evaluate the natural language condition against the latest body results AND all previous context
+4. **Decision**:
+   - If the condition is **TRUE** (exit condition met) → exit the loop, save the last body result
+   - If the condition is **FALSE**:
+     - \`iteration++\`
+     - If \`iteration >= maxIterations\` → exit loop with a warning: \`"Loop reached max iterations ({maxIterations}) without meeting exit condition"\`
+     - Otherwise → go back to step 2, **including the results of previous iterations in the context** for the next body execution
+5. **Save result**: If the loop has an \`outputVar\`, save the last iteration's result
+6. **Report**: Log the number of iterations taken and whether the exit condition was met
+- Move to the next step
+
 **If the step is \`return { ... }\`:**
 - This is the final step. Return the specified variable(s) as your response.
 
@@ -84,10 +111,31 @@ When executing \`parallel()\` or \`mapParallel()\` steps, you MUST issue ALL \`t
 \`\`\`
 [Response 1: task call for agent A]
 → Wait for result...
-[Response 2: task call for agent B]  
+[Response 2: task call for agent B]
 → Wait for result...
 [Response 3: task call for agent C]
 \`\`\`
+
+## Conditional (when) Evaluation Rules
+
+When evaluating a \`when\` condition:
+- The condition is **natural language** — you interpret it based on the available context
+- Be decisive: TRUE or FALSE, no "maybe"
+- Base your evaluation on **actual results**, not assumptions
+- Examples of conditions:
+  - "the analysis found security vulnerabilities" → check if the previous result mentions any vulnerabilities
+  - "testResult.passed === true" → check the structured test result
+  - "there are more than 5 errors" → count errors in the previous result
+
+## Loop Evaluation Rules
+
+When evaluating a \`loop\` exit condition:
+- The condition describes the **desired end state** (exit when TRUE)
+- Include **all previous iteration results** in the context for each new iteration
+- Each iteration should build on the previous one — do not start from scratch
+- If the loop body involves fixing issues, the next iteration should see the fixes applied
+- Be honest about whether the condition is met — do not prematurely exit or loop forever
+- When maxIterations is reached, report a clear warning and continue with the workflow
 
 ## Dynamic Expansion (mapParallel) Details
 
@@ -106,10 +154,10 @@ When you encounter a \`mapParallel\` step:
    \`\`\`
    Template: agent("分析 /home/hmsy/workspace/\${dir} 子项目...", { label: "分析:\${dir}" })
    Source: projectDirs = ['voice-gateway', 'fcitx5-android', 'llm-performance']
-   
+
    Expanded:
    - task(prompt="分析 /home/hmsy/workspace/voice-gateway 子项目...", description="分析:voice-gateway")
-   - task(prompt="分析 /home/hmsy/workspace/fcitx5-android 子项目...", description="分析:fcitx5-android")  
+   - task(prompt="分析 /home/hmsy/workspace/fcitx5-android 子项目...", description="分析:fcitx5-android")
    - task(prompt="分析 /home/hmsy/workspace/llm-performance 子项目...", description="分析:llm-performance")
    All 3 issued in ONE response
    \`\`\`
@@ -124,13 +172,25 @@ During execution, log your progress clearly:
 [Step 1/8] agent("分析根目录") → calling task(explore)...
 [Step 1/8] Done. Got rootStructure (2453 chars)
 
-## Phase: 子项目调研
+## Phase: 条件检查
 
-[Step 5/8] mapParallel(source: projectDirs, iter: dir) → expanding...
-  Found 10 items in projectDirs
-  Expanding to 10 parallel agent calls...
-  Issuing 10 task calls in parallel...
-[Step 5/8] Done. Got 10 results (avg 800 chars each)
+[Step 3/8] when("分析结果包含错误") → evaluating condition...
+  Condition: TRUE (found 3 errors in analysis)
+  Executing [True Branch]...
+  [Step 4/8] agent("修复错误") → calling task(general)...
+  [Step 4/8] Done. Got fixResult (1200 chars)
+
+## Phase: 测试循环
+
+[Step 5/8] loop("all tests pass", maxIterations=5) → starting loop
+  [Iteration 1/5] Executing body...
+  [Step 6/8] agent("修复并测试") → calling task(general)...
+  [Step 6/8] Done. 3 tests still failing
+  Condition: FALSE → continuing
+  [Iteration 2/5] Executing body...
+  [Step 7/8] agent("修复并测试") → calling task(general)...
+  [Step 7/8] Done. All tests pass!
+  Condition: TRUE → exiting loop after 2 iterations
 
 ## Final Result
 Returning report.
@@ -146,4 +206,7 @@ Returning report.
 6. **If a step fails, log the error and continue** - do not abort the entire workflow
 7. **Max 80 steps** - if the script has more steps, stop and report
 8. **Use \`explore\` for read-only tasks, \`general\` for tasks that may modify files**
-9. **For mapParallel, always read the script source** if you need to find hardcoded arrays`
+9. **For mapParallel, always read the script source** if you need to find hardcoded arrays
+10. **For when/loop, evaluate conditions honestly** based on actual results, not assumptions
+11. **For loop, always include previous iteration context** in the next iteration's prompts
+12. **Never exceed maxIterations** - always stop and warn when the limit is reached`

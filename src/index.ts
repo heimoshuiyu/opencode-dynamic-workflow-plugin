@@ -42,13 +42,27 @@ const serverPlugin: Plugin = async (input: PluginInput, _options): Promise<Hooks
 
     agentConfig["workflow"] = {
       description:
-        "Workflow 编排器：执行 workflow 脚本，调度 sub-agent 完成复杂任务。支持串行、并行、动态 mapParallel。",
+        "Workflow 编排器：通过脚本编排 sub-agent 完成复杂任务。核心能力是并行调度——多个独立 agent 在同一 response 中并发执行（parallel/mapParallel），实现数倍加速。支持串行、when 条件判断、loop 循环迭代。",
       mode: "subagent",
       steps: 80,
       permission: {
         task: "allow",
+        "workflow-parse": "allow",
       },
       prompt: WORKFLOW_AGENT_PROMPT,
+    }
+
+    // Restrict workflow-parse tool to the workflow agent only.
+    // Add a global deny rule to config.permission (the "user" ruleset) so that
+    // ALL agents — built-in, custom, and those registered by future plugins —
+    // have workflow-parse hidden from their tool list. The workflow agent's own
+    // permission config includes "workflow-parse": "allow", which is merged
+    // AFTER the user ruleset and therefore takes precedence for that agent.
+    const permConfig = config.permission as Record<string, unknown> | undefined
+    if (!permConfig || typeof permConfig !== "object") {
+      config.permission = { "workflow-parse": "deny" }
+    } else if (!("workflow-parse" in permConfig)) {
+      permConfig["workflow-parse"] = "deny"
     }
 
     // Inject the skill directory into config.skills.paths
