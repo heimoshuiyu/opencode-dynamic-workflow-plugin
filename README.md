@@ -43,7 +43,7 @@ Add the plugin to your [OpenCode config](https://opencode.ai/docs/config/):
 
 ```json
 {
-  "plugin": ["/home/hmsy/opencode-workflow-plugin"]
+  "plugin": ["/home/hmsy/opencode-dynamic-workflow-plugin"]
 }
 ```
 
@@ -155,7 +155,7 @@ Tested with 9 parallel sub-project agents — **4.7x speedup** (67s parallel vs 
 ## Plugin Architecture
 
 ```
-opencode-workflow-plugin/
+opencode-dynamic-workflow-plugin/
 ├── package.json
 ├── src/
 │   ├── index.ts                  # Plugin entry — server() → Hooks

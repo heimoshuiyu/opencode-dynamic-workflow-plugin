@@ -41,7 +41,7 @@
 
 ```json
 {
-  "plugin": ["/home/hmsy/opencode-workflow-plugin"]
+  "plugin": ["/home/hmsy/opencode-dynamic-workflow-plugin"]
 }
 ```
 
@@ -153,7 +153,7 @@ task(
 ## 插件结构
 
 ```
-opencode-workflow-plugin/
+opencode-dynamic-workflow-plugin/
 ├── package.json
 ├── src/
 │   ├── index.ts                  # 插件入口 — server() → Hooks
