@@ -1,5 +1,5 @@
 {
-  "name": "opencode-workflow-plugin",
+  "name": "opencode-dynamic-workflow-plugin",
   "version": "0.1.0",
   "description": "OpenCode Workflow Plugin — Multi-step workflow orchestration with serial, parallel, dynamic mapParallel, when (conditional), and loop (iteration) support",
   "main": "./src/index.ts",
