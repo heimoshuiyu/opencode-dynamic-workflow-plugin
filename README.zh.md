@@ -1,5 +1,11 @@
 # OpenCode Workflow 插件
 
+> ⚠️ **须知**
+>
+> 这本质上是一个 **vibe code** 项目。它通过逆向 Claude Code 的 *dynamic workspace* 功能，在 [OpenCode](https://opencode.ai) 中实现了类似的能力，但细节上仍有差异。例如，工作流中的节点是用子代理（sub-agent）实现的，子代理可能输出不完全符合预期的结构化输出。但由于整个工作流的输入输出都直接交给 agents 处理，所以在实践中这不是什么大问题——反而换来了更高的灵活性。
+>
+> **前置条件**：使用本插件前，你**必须**开启 OpenCode 的实验性环境变量，允许子代理嵌套运行。在启动 OpenCode 前设置 `OPENCODE_EXPERIMENTAL_NESTED_SUBAGENTS=1`。
+
 一个 [OpenCode](https://opencode.ai) 插件，提供多步骤工作流编排能力，支持串行、并行、动态 mapParallel、条件判断（`when`）和循环迭代（`loop`）。将工作流定义为 JavaScript DSL 脚本，插件会调度子代理完成复杂任务——中间结果与主对话完全隔离。
 
 ## 功能

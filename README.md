@@ -1,5 +1,11 @@
 # OpenCode Workflow Plugin
 
+> ⚠️ **Heads-up**
+>
+> This is essentially a **vibe-coded** project. It reverse-engineers the *dynamic workspace* feature from Claude Code and re-implements something similar for [OpenCode](https://opencode.ai). There are differences in the details — for instance, workflow nodes are backed by sub-agents, and sub-agents may not always produce the exact structured output you expect. However, since inputs and outputs are handled entirely by agents, this isn't a fundamental issue in practice — and the flexibility trade-off is well worth it.
+>
+> **Prerequisite**: To use this plugin, you **must** enable OpenCode's experimental environment variable that allows sub-agents to be nested. Set `OPENCODE_EXPERIMENTAL_NESTED_SUBAGENTS=1` before launching OpenCode.
+
 An [OpenCode](https://opencode.ai) plugin that enables multi-step workflow orchestration with serial, parallel, dynamic mapParallel, conditional branching (`when`), and iterative loops (`loop`). Define workflows as JavaScript DSL scripts, and the plugin dispatches sub-agents to complete complex tasks — with intermediate results isolated from your main conversation.
 
 [中文文档](./README.zh.md)
